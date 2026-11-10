@@ -1,0 +1,193 @@
+<title>SCW Birch Glucose Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument-panel datasheet. One control strip on top, then flowsheet, reactor traces, ledgers. */
+:root{
+  --bg:#eef1f3; --surface:#fbfcfc; --ink:#14202b; --muted:#566573; --rule:#d3dae0; --accent:#0d5c8a; --accent-ink:#ffffff; --hot:#b4471c;
+  --good:#0b7a0b; --warnc:#8a5a00; --crit:#b3261e; --good-bg:#e3f3e3; --warn-bg:#fdf0cf; --crit-bg:#fbe3e1;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-head:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1317; --surface:#161d23; --ink:#e7edf1; --muted:#9dabb7; --rule:#2b3640; --accent:#62b2e3; --accent-ink:#08131b; --hot:#f08a5d;
+  --good:#4cc04c; --warnc:#f3bd4e; --crit:#f2877f; --good-bg:#14301a; --warn-bg:#3a2e10; --crit-bg:#3d1b19;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e1317; --surface:#161d23; --ink:#e7edf1; --muted:#9dabb7; --rule:#2b3640; --accent:#62b2e3; --accent-ink:#08131b; --hot:#f08a5d;
+  --good:#4cc04c; --warnc:#f3bd4e; --crit:#f2877f; --good-bg:#14301a; --warn-bg:#3a2e10; --crit-bg:#3d1b19;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-head);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.005em}
+h1{font-size:30px;line-height:1.1} h2{font-size:21px} h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+p{margin:0;max-width:68ch} .muted{color:var(--muted);font-size:13.5px}
+header{display:flex;flex-direction:column;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+.eyebrow{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.target{display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:end}
+.target label{font:600 16px var(--f-head)} .target .big{font:500 34px/1 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--accent)} .target .big small{font-size:14px;color:var(--muted)}
+.target input{grid-column:1/-1} .scale{grid-column:1/-1;display:flex;justify-content:space-between;font:12px var(--f-mono);color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
+input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+button{font:500 13.5px var(--f-body);color:var(--ink);background:transparent;border:1px solid var(--muted);border-radius:3px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.kpi{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi span{font:500 11.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font:500 25px/1.15 var(--f-mono);font-variant-numeric:tabular-nums} .kpi b small{font-size:12.5px;color:var(--muted);font-weight:400}
+.kpi em{font-style:normal;font-size:12.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px var(--f-mono);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--good-bg);color:var(--good)} .chip.bad{background:var(--crit-bg);color:var(--crit)}
+.flags{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.flags li{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:8px 10px;border-radius:3px;font-size:14px;line-height:1.4}
+.flags b{font:500 12px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+.flags .crit{background:var(--crit-bg)} .flags .crit b{color:var(--crit)} .flags .warn{background:var(--warn-bg)} .flags .warn b{color:var(--warnc)} .flags .ok{background:var(--good-bg)} .flags .ok b{color:var(--good)}
+.scroll{overflow-x:auto;max-width:100%}
+#flow svg{display:block} .fs-b{fill:var(--surface);stroke:var(--muted);stroke-width:1} .fs-b.hot{stroke:var(--hot);stroke-width:2} .fs-b.prod{stroke:var(--accent);stroke-width:2}
+.fs-t{font:600 12px var(--f-mono);fill:var(--ink)} .fs-n{font:11px var(--f-body);fill:var(--muted)} .fs-v{font:11.5px var(--f-mono);fill:var(--ink)}
+.pipe{stroke:var(--muted);stroke-width:1.5;fill:none} .pipe.steam{stroke-dasharray:4 3}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted)}
+.legend i,.tip i,.fate-l i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;flex:none}
+.plot{position:relative} .plot svg{display:block;max-width:100%}
+.grid{stroke:var(--rule);stroke-width:1} .axis{stroke:var(--muted);stroke-width:1} .tick{font:11px var(--f-mono);fill:var(--muted)}
+.tip{position:absolute;top:8px;background:var(--surface);border:1px solid var(--muted);border-radius:3px;padding:6px 8px;font-size:12px;pointer-events:none;min-width:170px;z-index:2}
+.tip div{display:flex;align-items:center;gap:0} .tip em{font:normal 12px var(--f-mono);margin-left:auto;padding-left:10px}
+.stack{display:flex;gap:2px;height:30px;border-radius:3px;overflow:hidden} .stack div{min-width:2px}
+.fate-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 24px;font-size:13.5px}
+.fate-l li{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--rule);padding:3px 0} .fate-l span{flex:1;min-width:0}
+.fate-l b{font:500 13px var(--f-mono);padding-left:8px} .fate-l em{font:normal 12px var(--f-mono);color:var(--muted);width:48px;text-align:right}
+details{border-top:1px solid var(--rule)} details:last-of-type{border-bottom:1px solid var(--rule)}
+summary{cursor:pointer;padding:10px 0;font:600 15px var(--f-head);list-style-position:inside}
+.ctls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:8px 24px;padding:4px 0 14px}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:baseline}
+.ctl label{font-size:13.5px} .ctl output{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--accent)} .ctl input{grid-column:1/-1}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font:500 11.5px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+tbody th{font-weight:500;min-width:150px} td{font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+table.num td{text-align:right;padding-right:14px} table.num thead th:not(:first-child){text-align:right;padding-right:14px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px 28px;font-size:14px}
+.notes ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px} .notes a{color:var(--accent)}
+textarea{width:100%;height:120px;font:12px var(--f-mono);background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">SCW programme · POC v2 · process simulation</span>
+  <h1>Birch in, glucose syrup out</h1>
+  <p>A physics and chemistry model of the POC v2 flowsheet: milled birch and water, a 400 °C / 25 MPa supercritical-water reactor, flash quench, a water-only finishing hold, filtration and two nanofiltration steps. Set the glucose you want per day; the model finds the wood, the tube sizes and what comes out with it.</p>
+</header>
+
+<section aria-label="Output control">
+  <div class="panel">
+    <div class="target">
+      <label for="target">Free glucose + fructose output</label>
+      <div class="big"><span id="targetOut">1.00</span><small> kg/day</small></div>
+      <input type="range" id="target" min="0" max="100" step="0.5" value="50" aria-describedby="freezeNote">
+      <div class="scale"><span>0.1</span><span>0.3</span><span>1</span><span>3</span><span>10 kg/day</span></div>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="freeze"> Freeze hardware at this size</label>
+      <label class="check"><input type="checkbox" id="c_rec" checked> Preheat feed water with flash steam</label>
+      <button type="button" id="reset">Reset all</button>
+      <button type="button" id="copy">Copy results as JSON</button>
+    </div>
+    <p class="muted" id="freezeNote"></p>
+    <textarea id="dump" hidden aria-label="Results as JSON"></textarea>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="chips" id="chips"></div>
+  <ul class="flags" id="warn"></ul>
+</section>
+
+<section>
+  <h2>Operating point</h2>
+  <div class="panel">
+    <details open><summary>Reactor, quench and hold</summary><div class="ctls" id="ctl_op"></div></details>
+    <details><summary>Birch feed</summary><div class="ctls" id="ctl_feed"></div><p class="muted" style="padding-bottom:12px">Acetyl 4.4%, uronic 4%, extractives 3.6% and ash 0.4% stay fixed; the composition is renormalised to 100%.</p></details>
+    <details><summary>Membrane purification</summary><div class="ctls" id="ctl_pur"></div></details>
+    <details><summary>Kinetics multipliers, for fitting to your test data</summary><div class="ctls" id="ctl_kin"></div></details>
+  </div>
+</section>
+
+<section>
+  <h2>Flowsheet</h2>
+  <div class="panel"><div class="scroll" id="flow"></div></div>
+</section>
+
+<section>
+  <h2>Inside the reactor</h2>
+  <p class="muted" id="sum1"></p>
+  <div class="grid2">
+    <div class="panel"><h3>Species, % of dry wood</h3><div id="ch_r1"></div></div>
+    <div class="panel"><h3>Temperature, °C</h3><div id="ch_T"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Finishing hold and where the wood ends up</h2>
+  <p class="muted" id="sum2"></p>
+  <div class="grid2">
+    <div class="panel"><h3>Hold in V-01 liquor, % of dry wood</h3><div id="ch_r2"></div></div>
+    <div class="panel"><h3>Fate of 1 kg dry birch</h3><div id="fate"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Streams and by-products</h2>
+  <div class="panel"><h3>Stream table</h3><div id="t_streams"></div></div>
+  <div class="panel"><h3>Dissolved species, g per kg dry wood</h3><div id="t_species"></div></div>
+</section>
+
+<section>
+  <h2>Hardware the model sized</h2>
+  <div class="panel"><div id="t_equip"></div><p class="muted">Wall checks use ASME B31.3 thin-wall with indicative allowable stresses at 1.1 × operating pressure. They are a sanity check for quotation, not a pressure design.</p></div>
+</section>
+
+<section>
+  <h2>Energy and water</h2>
+  <div class="grid2">
+    <div class="panel"><div id="t_energy"></div></div>
+    <div class="panel"><div id="t_water"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Model checks</h2>
+  <div class="panel"><div id="t_valid"></div></div>
+</section>
+
+<section>
+  <h2>What the model assumes</h2>
+  <div class="panel notes">
+    <div><h3>Solid ground</h3><ul>
+      <li>Water density, enthalpy, viscosity and conductivity come from IAPWS-95 on a 22.5–30 MPa, 10–700 °C grid; saturation data for both flashes.</li>
+      <li>Energy balances at the mixing tee, reactor wall, both flashes and the steam preheater. Mass and carbon close independently.</li>
+      <li>Pressure effect on ionic reactions through the Marshall–Franck ion product of water.</li>
+      <li>Activation energies for cellulose (154.4 and 430.3 kJ/mol), oligomer hydrolysis (135.2) and glucose isomerisation (111.5) from Cantero et al., J. Supercrit. Fluids 75 (2013).</li>
+    </ul></div>
+    <div><h3>Calibrated, re-fit on Stage A data</h3><ul>
+      <li>Rate constants at 400 °C are set so pure cellulose gives over 95% sugars at 0.02 s and about 60–70% glycolaldehyde at 1 s, and biomass gives about 65% C5+C6 sugars at 0.19 s.</li>
+      <li>In-particle diffusivity is one fitted number. It makes yield fall with the square of particle size, as the pilot work reports.</li>
+      <li>The published anchors are wheat bran and beet pulp. No birch data exist in this model.</li>
+    </ul></div>
+    <div><h3>Weakest parts</h3><ul>
+      <li>The finishing hold. Acid-catalysed oligomer hydrolysis is inferred from analytical post-hydrolysis practice, and the pH from the wood’s own acids is an estimate.</li>
+      <li>Membrane rejections and steam volatilities are assumed constants. The plan’s G3 and G4 gates exist to measure them.</li>
+      <li>Plug flow with no axial dispersion, no fouling, no char, no gas formation, no corrosion products.</li>
+      <li>Product safety is not modelled. Glycolaldehyde, furans and phenolics in the syrup are reported, not judged.</li>
+    </ul></div>
+  </div>
+</section>
+</div>
+<script>/*__WATER__*/</script>
+<script>/*__MODEL__*/</script>
+<script>/*__UI__*/</script>

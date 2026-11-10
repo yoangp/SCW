@@ -441,7 +441,7 @@
     const W2 = (lvl, msg) => warn.push({ lvl, msg });
     if (ReMin < 4000) W2('warn', 'Reactor Reynolds number ' + ReMin.toFixed(0) + ' is not fully turbulent: residence-time distribution broadens and particles can settle. The plug-flow yield is optimistic.');
     if (tube.ID < 5 * dp) W2('crit', 'Reactor bore is under 5 particle diameters: bridging / plugging risk.');
-    if (dOr < 3 * dp) W2('crit', 'Flash-valve orifice ' + (dOr * 1e3).toFixed(2) + ' mm is under 3 feed-particle diameters (' + sl.dpUm + ' um): it will plug. Mill finer, run more hours at lower flow is worse -- raise instantaneous flow (fewer hours/day) or use a capillary/back-pressure letdown.');
+    if (dOr < 3 * dp) W2('crit', 'Flash-valve orifice ' + (dOr * 1e3).toFixed(2) + ' mm is under 3 feed-particle diameters (' + sl.dpUm + ' um): it will plug. Mill finer, run fewer hours per day at a higher flow, or use a capillary letdown.');
     else if (dOr < 0.3e-3) W2('warn', 'Flash-valve orifice ' + (dOr * 1e3).toFixed(2) + ' mm is very small; erosion and partial plugging will shift pressure.');
     if (!wcR.ok) W2('crit', 'Reactor tube wall is below the indicative B31.3 minimum at ' + wcR.Tmetal.toFixed(0) + ' C.');
     if (!eq.heater.wall.ok) W2('crit', 'Heater coil wall is below the indicative B31.3 minimum at block temperature ' + Tblock.toFixed(0) + ' C.');
