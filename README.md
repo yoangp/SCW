@@ -25,6 +25,10 @@ No runtime dependencies. `src/model.js` runs unchanged in Node and in the browse
 | S-01/S-02 | Cake wash loss; loose NF then tight NF with constant-rejection concentration and diafiltration; flux from osmotic pressure |
 | Utilities | Steam preheat recovery (pinch-limited), pumps, milling, daily heat-up, evaporation on surplus steam |
 
+The page also draws the machine in 3D (`src/view3d.js`, three.js r128 from a CDN): every part is generated to scale from
+the sizing results, coloured by temperature, pressure or by-product concentration, and each part lists its dimensions,
+flow, T, P and stream composition. Without WebGL the part data panel still works.
+
 Tube sizes come from a standard imperial catalogue; walls are checked with ASME B31.3 thin-wall and indicative stresses.
 "Freeze hardware" in the UI (or the second argument of `SCW.solve`) rates one fixed machine at other flows.
 

@@ -412,7 +412,7 @@
       LH += dL; fluxMax = Math.max(fluxMax, hi * (Tblock - T));
       dPH += friction(Re, R1.roughUm * 1e-6 / tubeH.ID) * dL / tubeH.ID * rho * u * u / 2;
     }
-    eq.heater = { tube: tubeH.name, L: LH, dutyKW: QheatHw * woodRate, elecKW: heaterKW, Tblock, fluxMaxKWm2: fluxMax / 1000, dPbar: dPH / 1e5, wall: wallCheck(tubeH, 'Alloy 625', Tblock, P), Tpre };
+    eq.heater = { tube: tubeH.name, OD: tubeH.OD, ID: tubeH.ID, L: LH, dutyKW: QheatHw * woodRate, elecKW: heaterKW, Tblock, fluxMaxKWm2: fluxMax / 1000, dPbar: dPH / 1e5, wall: wallCheck(tubeH, 'Alloy 625', Tblock, P), Tpre };
     /* pumps */
     const qHwMlMin = mdotHw / rhoW(rc.Tin, P) * 6e7, qSlMlMin = woodRate * mSl / 1010 * 6e7;
     eq.pumps = { hotWaterMlMin: qHwMlMin, slurryMlMin: qSlMlMin, headMPa: P + (dP + dPH) / 1e6, hydKW: (mdotTot / 1000) * P * 1e6 / 1000 };
@@ -423,9 +423,10 @@
     eq.valve = { orificeMm: dOr * 1e3, massFlux: G };
     /* V-01 flash separator + R-02 hold volume */
     const mdotV1 = woodRate * f1.mV, mdotL1 = woodRate * f1.mL, uMax = 0.07 * Math.sqrt((s1.rhof - s1.rhog) / s1.rhog);
-    const Dv = Math.max(0.04, Math.sqrt(4 * mdotV1 / s1.rhog / (PI * uMax))), holdL = woodRate * litres * holdS;
-    const vesselL = PI * Dv * Dv / 4 * 3 * Dv * 1000 + holdL * 1.3;
-    eq.flash = { Dmm: Dv * 1e3, Hmm: 3 * Dv * 1e3, holdL, vesselL, T: s1.T, PMPa: q.Pf1, vapFrac: xv1, wallMm: Math.max(1.5, 1.1 * q.Pf1 * Dv / (2 * 100 - 1.2 * 1.1 * q.Pf1) * 1e3), holdS };
+    const DvMin = Math.max(0.04, Math.sqrt(4 * mdotV1 / s1.rhog / (PI * uMax))), holdL = woodRate * litres * holdS;
+    const vesselL = PI * DvMin * DvMin / 4 * 3 * DvMin * 1000 + holdL * 1.3;      // disengagement space + liquor sump
+    const Dv = Math.max(DvMin, Math.cbrt(4 * vesselL / 1000 / (3 * PI)));          // 3:1 vessel that holds it
+    eq.flash = { Dmm: Dv * 1e3, Hmm: 3 * Dv * 1e3, DminMm: DvMin * 1e3, holdL, vesselL, T: s1.T, PMPa: q.Pf1, vapFrac: xv1, wallMm: Math.max(1.5, 1.1 * q.Pf1 * Dv / (2 * 100 - 1.2 * 1.1 * q.Pf1) * 1e3), holdS };
     /* HX-01 condensing preheater */
     const dT1 = s1.T - rc.Tin, dT2 = s1.T - Tpre, lmtd = Qpre > 0 ? (dT1 - dT2) / Math.log(dT1 / Math.max(dT2, 0.1)) : 0;
     eq.preheater = { dutyKW: Qpre * woodRate, areaM2: Qpre > 0 ? Qpre * woodRate * 1000 / (1200 * lmtd) : 0, Tpre, coolingKW };

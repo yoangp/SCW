@@ -11,6 +11,7 @@
     if (a >= 1000) return Math.round(x).toLocaleString('en-US');
     return x.toFixed(Math.min(6, Math.max(0, sig - 1 - Math.floor(Math.log10(a)))));
   }
+  window.SCWfmt = fmt;
   const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const getPath = (o, p) => p.split('.').reduce((a, k) => a[k], o);
   function setPath(o, p, v) { const ks = p.split('.'); let a = o; while (ks.length > 1) { const k = ks.shift(); a = a[k] = a[k] || {}; } a[ks[0]] = v; }
@@ -247,12 +248,14 @@
     $('sum1').textContent = 'Cellulose conversion ' + fmt(k.celConv * 100, 3) + '%. Leaving R-01: ' + fmt(k.rawFreeC6 * 1000) + ' g free C6 and ' + fmt(k.rawOligPotential * 1000) + ' g glucose-equivalent still bound in oligomers, per kg dry wood.';
     $('sum2').textContent = 'Liquor at ' + fmt(k.T2, 3) + ' °C, pH ' + fmt(k.pHhot, 3) + ' from the wood’s own acids. Free C6 goes from ' + fmt(k.rawFreeC6 * 1000) + ' to ' + fmt(k.afterHoldC6 * 1000) + ' g per kg dry wood; purification then recovers ' + fmt(k.purifRecovery * 100, 2) + '%.';
     flowsheet(r); charts(r); fate(r); tables(r);
+    if (window.SCW3D) window.SCW3D.update(r);
   }
   let raf = 0;
   const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
 
   function init() {
     buildControls();
+    if (window.SCW3D) window.SCW3D.boot();
     document.querySelectorAll('input').forEach(el => el.addEventListener('input', schedule));
     $('freeze').addEventListener('change', ev => {
       if (ev.target.checked && state.res) { state.frozen = state.res.geom; state.frozenAt = state.res.p.target.glucoseKgDay; } else state.frozen = null;

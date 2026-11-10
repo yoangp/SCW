@@ -76,6 +76,19 @@ tbody th{font-weight:500;min-width:150px} td{font-family:var(--f-mono);font-size
 table.num td{text-align:right;padding-right:14px} table.num thead th:not(:first-child){text-align:right;padding-right:14px}
 .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px 28px;font-size:14px}
 .notes ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px} .notes a{color:var(--accent)}
+.m3{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:start}
+@media (max-width:860px){.m3{grid-template-columns:minmax(0,1fr)}}
+.m3-host{position:relative;height:480px;overflow:hidden;border:1px solid var(--rule);border-radius:3px;touch-action:none;background:var(--surface)}
+@media (max-width:600px){.m3-host{height:340px}}
+.m3-host canvas{display:block;width:100%;height:100%}
+#m3labels{position:absolute;inset:0;pointer-events:none}
+#m3labels button,#m3labels span{position:absolute;left:0;top:0;font:500 10.5px var(--f-mono);padding:1px 5px;background:var(--surface);color:var(--ink);border:1px solid var(--muted);border-radius:2px;white-space:nowrap;pointer-events:auto}
+#m3labels span{border-color:var(--accent);color:var(--accent);pointer-events:none}
+#m3labels button.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.m3-leg{display:flex;align-items:center;gap:10px;font:12px var(--f-mono);color:var(--muted)} .m3-leg i{flex:1;height:10px;border-radius:2px}
+select{font:500 13.5px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--muted);border-radius:3px;padding:6px 8px;max-width:100%}
+.m3dl{display:grid;grid-template-columns:minmax(90px,auto) 1fr;gap:4px 12px;margin:0;font-size:13.5px}
+.m3dl dt{color:var(--muted)} .m3dl dd{margin:0;font:12.5px var(--f-mono);font-variant-numeric:tabular-nums}
 textarea{width:100%;height:120px;font:12px var(--f-mono);background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
 </style>
 
@@ -121,6 +134,25 @@ textarea{width:100%;height:120px;font:12px var(--f-mono);background:var(--surfac
 <section>
   <h2>Flowsheet</h2>
   <div class="panel"><div class="scroll" id="flow"></div></div>
+</section>
+
+<section>
+  <h2>Machine in 3D</h2>
+  <p class="muted">Generated to scale from the sizes the model found, so it changes with every setting. Drag to rotate, pinch or scroll to zoom, tap a part to read its dimensions, flow, temperature, pressure and what is dissolved in the stream.</p>
+  <div class="m3">
+    <div class="panel">
+      <div class="row">
+        <label for="m3mode">Colour by</label>
+        <select id="m3mode"><option value="T">Temperature</option><option value="P">Pressure</option><option value="B">By-product concentration</option></select>
+        <label for="m3part">Part</label><select id="m3part"></select>
+        <button type="button" id="m3reset">Reset view</button>
+      </div>
+      <div class="m3-host" id="m3host"><div id="m3labels"></div></div>
+      <div class="m3-leg"><span id="m3lo"></span><i id="m3bar"></i><span id="m3hi"></span></div>
+      <p class="muted" id="m3note"></p>
+    </div>
+    <div class="panel" id="m3info"></div>
+  </div>
 </section>
 
 <section>
@@ -188,6 +220,9 @@ textarea{width:100%;height:120px;font:12px var(--f-mono);background:var(--surfac
   </div>
 </section>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>/*__WATER__*/</script>
 <script>/*__MODEL__*/</script>
+<script>/*__VIEW3D__*/</script>
 <script>/*__UI__*/</script>
